@@ -5,29 +5,29 @@ class Dpersona:
         self.__db = ConexionDB().conexionSupabase()
         self.__nombreTabla = 'usuario'
 
-    def __ejecutarConsultas(self, consulta, tipoConsulta = None):
-        try:
-            if tipoConsulta == 'SELECT':
-                resultado = consulta.execute().data
-                return resultado
-            else: 
-                resultado = consulta.execute()
-                return resultado
-        except Exception as e:
-            raise e
-
     def mostrarPersonas(self):
-        consulta = self.__db.table(self.__nombreTabla).select('*')
-        return self.__ejecutarConsultas(consulta, 'SELECT')
-    
-    def nuevaPersona(self, usuario:dict):
-        consulta = self.__db.table(self.__nombreTabla).insert(usuario)
-        return self.__ejecutarConsultas(consulta)
-    
-    def actualizarPersona(self, usuario:dict, nombre:str):
-        consulta = self.__db.table(self.__nombreTabla).update(usuario).eq('nombre', nombre)
-        return self.__ejecutarConsultas(consulta)
-    
-    def eliminarPersona(self, nombre: str):
-        consulta = self.__db.table(self.__nombreTabla).delete().eq('nombre',nombre)
-        return self.__ejecutarConsultas(consulta)
+        return self.__db.table(self.__nombreTabla).select('*').execute().data
+
+    def nuevaPersona(self, usuario: dict):
+        return self.__db.table(self.__nombreTabla).insert(usuario).execute()
+
+    def actualizarPersona(self, usuario: dict, correo_original: str):
+        return (
+            self.__db
+            .table(self.__nombreTabla)
+            .update(usuario)
+            .eq('correo', correo_original)
+            .execute()
+        )
+
+    def eliminarPersona(self, correo: str):
+        return (
+            self.__db
+            .table(self.__nombreTabla)
+            .delete()
+            .eq('correo', correo)
+            .execute()
+        )
+
+
+

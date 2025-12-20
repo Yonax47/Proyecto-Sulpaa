@@ -7,12 +7,11 @@ class NPersona:
     def mostrarPersonas(self):
         return self.__dPersona.mostrarPersonas()
 
-    def nuevaPersona(self, usuario:dict):
+    def nuevaPersona(self, usuario: dict):
         self.__dPersona.nuevaPersona(usuario)
-    
-    def actualizarPersona(self, usuario:dict, nombre:str):
-        return self.__dPersona.actualizarPersona(usuario, nombre)
-    
-    def eliminarPersona(self):
-        pass
-        
+
+    def actualizarPersona(self, usuario: dict, correo_original: str):
+        self.__dPersona.actualizarPersona(usuario, correo_original)
+
+    def eliminarPersona(self, correo: str):
+        self.__dPersona.eliminarPersona(correo)
