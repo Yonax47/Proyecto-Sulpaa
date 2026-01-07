@@ -1,33 +1,42 @@
-from conexion import ConexionDB
+from supabase import create_client
 
-class Dpersona:
-    def __init__(self):
-        self.__db = ConexionDB().conexionSupabase()
-        self.__nombreTabla = 'usuario'
+url = 'https://aflmusqffqglrkkmdrav.supabase.co'
+key = 'sb_secret_JaaM6I6JpMgYFeFTe-21_g_fsUCjLQB'
+
+supabase = create_client(url, key)
+
+
+class DPersona:
 
     def mostrarPersonas(self):
-        return self.__db.table(self.__nombreTabla).select('*').execute().data
+        response = (
+            supabase
+            .table("usuario")
+            .select("usuario_id, nombre, apellido, correo, telefono")
+            .order("usuario_id")
+            .execute()
+        )
+        return response.data
 
     def nuevaPersona(self, usuario: dict):
-        return self.__db.table(self.__nombreTabla).insert(usuario).execute()
+        supabase.table("usuario").insert({
+            "nombre": usuario["nombre"],
+            "apellido": usuario["apellido"],
+            "correo": usuario["correo"],
+            "contrasena": usuario["contrasena"],
+            "telefono": usuario["telefono"]
+        }).execute()
 
     def actualizarPersona(self, usuario: dict, correo_original: str):
-        return (
-            self.__db
-            .table(self.__nombreTabla)
-            .update(usuario)
-            .eq('correo', correo_original)
-            .execute()
-        )
+        supabase.table("usuario").update({
+            "nombre": usuario["nombre"],
+            "apellido": usuario["apellido"],
+            "correo": usuario["correo"],
+            "telefono": usuario["telefono"]
+        }).eq("correo", correo_original).execute()
 
     def eliminarPersona(self, correo: str):
-        return (
-            self.__db
-            .table(self.__nombreTabla)
-            .delete()
-            .eq('correo', correo)
+        supabase.table("usuario") \
+            .delete() \
+            .eq("correo", correo) \
             .execute()
-        )
-
-
-

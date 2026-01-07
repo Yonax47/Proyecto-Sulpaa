@@ -6,136 +6,169 @@ import hashlib
 
 class PPersona:
     def __init__(self):
-        self.nPersona = NPersona()
+        self.negocio = NPersona()
 
-        if 'modo_edicion' not in st.session_state:
-            st.session_state.modo_edicion = False
-        if 'correo_original' not in st.session_state:
-            st.session_state.correo_original = ''
+        if "editar" not in st.session_state:
+            st.session_state.editar = False
+        if "correo_original" not in st.session_state:
+            st.session_state.correo_original = None
+        if "datos_form" not in st.session_state:
+            st.session_state.datos_form = {
+                "nombre": "",
+                "apellido": "",
+                "telefono": "",
+                "correo": "",
+            }
 
-        self.construir_interfaz()
+        self.interfaz()
 
-    def construir_interfaz(self):
-        st.title("Registro de Usuarios")
+    # ================= INTERFAZ =================
+    def interfaz(self):
+        st.title("👥 Clientes SULPAA")
 
-        # -------- FORMULARIO --------
+        self.formulario()
+        st.divider()
+        self.tabla()
+
+    # ================= FORMULARIO =================
+    def formulario(self):
         with st.form("form_usuario"):
-            nombre = st.text_input("Nombre", key="nombre")
-            apellido = st.text_input("Apellido", key="apellido")
-            telefono = st.text_input("Teléfono", key="telefono")
-            correo = st.text_input("Correo", key="correo")
-            contrasena = st.text_input("Contraseña", type="password", key="contrasena")
+            nombre = st.text_input(
+                "Nombre",
+                value=st.session_state.datos_form["nombre"]
+            )
+            apellido = st.text_input(
+                "Apellido",
+                value=st.session_state.datos_form["apellido"]
+            )
+            telefono = st.text_input(
+                "Teléfono",
+                value=st.session_state.datos_form["telefono"]
+            )
+            correo = st.text_input(
+                "Correo",
+                value=st.session_state.datos_form["correo"]
+            )
 
-            if st.session_state.modo_edicion:
-                btn = st.form_submit_button("Actualizar")
-            else:
-                btn = st.form_submit_button("Guardar")
+            contrasena = st.text_input(
+                "Contraseña",
+                type="password",
+                help="Solo llena este campo si deseas cambiar la contraseña"
+            )
 
-            if btn:
-                if not self.validar_datos(nombre, apellido, telefono, correo, contrasena):
+            boton = st.form_submit_button(
+                "Actualizar" if st.session_state.editar else "Registrar"
+            )
+
+            if boton:
+                if not self.validar_datos(
+                    nombre, apellido, telefono, correo,
+                    contrasena if not st.session_state.editar else "123456"
+                ):
                     return
 
                 usuario = {
-                    "nombre": nombre,
-                    "apellido": apellido,
-                    "telefono": telefono,
-                    "correo": correo,
-                    "contrasena": self.cifrar(contrasena)
+                    "nombre": nombre.strip(),
+                    "apellido": apellido.strip(),
+                    "telefono": telefono.strip(),
+                    "correo": correo.strip(),
                 }
 
-                if st.session_state.modo_edicion:
-                    self.actualizar(usuario)
+                # Solo cifrar contraseña si se escribe una nueva
+                if contrasena:
+                    usuario["contrasena"] = self.cifrar(contrasena)
+
+                if st.session_state.editar:
+                    self.negocio.actualizarPersona(
+                        usuario,
+                        st.session_state.correo_original
+                    )
+                    st.success("✅ Usuario actualizado")
                 else:
-                    self.guardar(usuario)
+                    usuario["contrasena"] = self.cifrar(contrasena)
+                    self.negocio.nuevaPersona(usuario)
+                    st.success("✅ Usuario registrado")
 
-        self.mostrar_tabla()
+                self.resetear()
+                st.rerun()
 
-    # -------- TABLA + BOTONES --------
-    def mostrar_tabla(self):
-        lista = self.nPersona.mostrarPersonas()
+    # ================= TABLA =================
+    def tabla(self):
+        personas = self.negocio.mostrarPersonas()
 
-        if not lista:
+        if not personas:
             st.info("No hay usuarios registrados")
             return
 
-        st.subheader("Usuarios registrados")
-        st.dataframe(lista, use_container_width=True)
+        st.subheader("📋 Lista de clientes")
+        st.dataframe(
+            personas,
+            use_container_width=True
+        )
 
-        opciones = [u["correo"] for u in lista]
-        seleccionado = st.selectbox("Selecciona un usuario", opciones)
+        correos = [p["correo"] for p in personas]
+        seleccionado = st.selectbox("Selecciona un usuario", correos)
 
         col1, col2 = st.columns(2)
 
         with col1:
-            if st.button("Editar"):
-                usuario = next(u for u in lista if u["correo"] == seleccionado)
+            if st.button("✏️ Editar"):
+                usuario = next(p for p in personas if p["correo"] == seleccionado)
 
-                st.session_state.nombre = usuario["nombre"]
-                st.session_state.apellido = usuario["apellido"]
-                st.session_state.telefono = usuario["telefono"]
-                st.session_state.correo = usuario["correo"]
-                st.session_state.contrasena = ""
-
+                st.session_state.datos_form = {
+                    "nombre": usuario["nombre"],
+                    "apellido": usuario["apellido"],
+                    "telefono": usuario["telefono"],
+                    "correo": usuario["correo"],
+                }
                 st.session_state.correo_original = usuario["correo"]
-                st.session_state.modo_edicion = True
+                st.session_state.editar = True
                 st.rerun()
 
         with col2:
-            if st.button("Eliminar"):
-                self.nPersona.eliminarPersona(seleccionado)
-                st.success("Usuario eliminado")
+            if st.button("🗑 Eliminar"):
+                self.negocio.eliminarPersona(seleccionado)
+                st.success("🗑 Usuario eliminado")
                 self.resetear()
                 st.rerun()
 
-    # -------- CRUD --------
-    def guardar(self, usuario):
-        correos = [u["correo"] for u in self.nPersona.mostrarPersonas()]
-        if usuario["correo"] in correos:
-            st.warning("Ese correo ya existe")
-            return
-
-        self.nPersona.nuevaPersona(usuario)
-        st.success("Usuario registrado")
-        self.resetear()
-
-    def actualizar(self, usuario):
-        lista = self.nPersona.mostrarPersonas()
-        for u in lista:
-            if u["correo"] == usuario["correo"] and u["correo"] != st.session_state.correo_original:
-                st.warning("Ese correo ya pertenece a otro usuario")
-                return
-
-        self.nPersona.actualizarPersona(usuario, st.session_state.correo_original)
-        st.success("Usuario actualizado")
-        self.resetear()
-
-    # -------- UTILIDADES --------
-    def resetear(self):
-        st.session_state.modo_edicion = False
-        st.session_state.correo_original = ""
-        st.session_state.nombre = ""
-        st.session_state.apellido = ""
-        st.session_state.telefono = ""
-        st.session_state.correo = ""
-        st.session_state.contrasena = ""
-
+    # ================= VALIDACIONES =================
     def validar_datos(self, nombre, apellido, telefono, correo, contrasena):
-        if not nombre.isalpha():
-            st.error("Nombre inválido")
+        if not re.fullmatch(r"[A-Za-zÁÉÍÓÚáéíóúÑñ ]+", nombre):
+            st.error("❌ El nombre solo debe contener letras")
             return False
-        if not apellido.isalpha():
-            st.error("Apellido inválido")
+
+        if not re.fullmatch(r"[A-Za-zÁÉÍÓÚáéíóúÑñ ]+", apellido):
+            st.error("❌ El apellido solo debe contener letras")
             return False
-        if not telefono.isdigit():
-            st.error("Teléfono inválido")
+
+        if not re.fullmatch(r"\d{9}", telefono):
+            st.error("❌ El teléfono debe tener exactamente 9 dígitos")
             return False
-        if not re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", correo):
-            st.error("Correo inválido")
+
+        if not re.fullmatch(
+            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+            correo
+        ):
+            st.error("❌ Correo inválido (ejemplo: usuario@dominio.com)")
             return False
+
         if len(contrasena) < 6:
-            st.error("Contraseña muy corta")
+            st.error("❌ La contraseña debe tener al menos 6 caracteres")
             return False
+
         return True
 
+    # ================= UTILIDADES =================
     def cifrar(self, texto):
         return hashlib.sha256(texto.encode()).hexdigest()
+
+    def resetear(self):
+        st.session_state.editar = False
+        st.session_state.correo_original = None
+        st.session_state.datos_form = {
+            "nombre": "",
+            "apellido": "",
+            "telefono": "",
+            "correo": "",
+        }

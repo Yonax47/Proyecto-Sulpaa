@@ -1,17 +1,19 @@
-from capaDatos.dPersona import Dpersona
+from capaDatos.dPersona import DPersona
+
 
 class NPersona:
+
     def __init__(self):
-        self.__dPersona = Dpersona()
+        self.datos = DPersona()
 
     def mostrarPersonas(self):
-        return self.__dPersona.mostrarPersonas()
+        return self.datos.mostrarPersonas()
 
     def nuevaPersona(self, usuario: dict):
-        self.__dPersona.nuevaPersona(usuario)
+        self.datos.nuevaPersona(usuario)
 
     def actualizarPersona(self, usuario: dict, correo_original: str):
-        self.__dPersona.actualizarPersona(usuario, correo_original)
+        self.datos.actualizarPersona(usuario, correo_original)
 
     def eliminarPersona(self, correo: str):
-        self.__dPersona.eliminarPersona(correo)
+        self.datos.eliminarPersona(correo)
