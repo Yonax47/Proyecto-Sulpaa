@@ -133,6 +133,7 @@ class PPersona:
                 st.rerun()
 
     # ================= VALIDACIONES =================
+    # la validacion recorre el campo que estas ingresando
     def validar_datos(self, nombre, apellido, telefono, correo, contrasena):
         if not re.fullmatch(r"[A-Za-zÁÉÍÓÚáéíóúÑñ ]+", nombre):
             st.error("❌ El nombre solo debe contener letras")
