@@ -92,7 +92,7 @@ class PPersona:
                 self.resetear()
                 st.rerun()
 
-    # ================= TABLA =================
+    # ================= TABLAA=================
     def tabla(self):
         personas = self.negocio.mostrarPersonas()
 
