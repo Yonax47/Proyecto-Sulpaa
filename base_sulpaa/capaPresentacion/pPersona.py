@@ -25,6 +25,7 @@ class PPersona:
     # ================= INTERFAZ =================
     def interfaz(self):
         st.title("👥 Clientes SULPAA")
+
         self.formulario()
         st.divider()
         self.tabla()
@@ -32,15 +33,27 @@ class PPersona:
     # ================= FORMULARIO =================
     def formulario(self):
         with st.form("form_usuario"):
-            nombre = st.text_input("Nombre", value=st.session_state.datos_form["nombre"])
-            apellido = st.text_input("Apellido", value=st.session_state.datos_form["apellido"])
-            telefono = st.text_input("Teléfono", value=st.session_state.datos_form["telefono"])
-            correo = st.text_input("Correo", value=st.session_state.datos_form["correo"])
+            nombre = st.text_input(
+                "Nombre",
+                value=st.session_state.datos_form["nombre"]
+            )
+            apellido = st.text_input(
+                "Apellido",
+                value=st.session_state.datos_form["apellido"]
+            )
+            telefono = st.text_input(
+                "Teléfono",
+                value=st.session_state.datos_form["telefono"]
+            )
+            correo = st.text_input(
+                "Correo",
+                value=st.session_state.datos_form["correo"]
+            )
 
             contrasena = st.text_input(
                 "Contraseña",
                 type="password",
-                help="Déjalo vacío si no deseas cambiar la contraseña"
+                help="Solo llena este campo si deseas cambiar la contraseña"
             )
 
             boton = st.form_submit_button(
@@ -50,8 +63,7 @@ class PPersona:
             if boton:
                 if not self.validar_datos(
                     nombre, apellido, telefono, correo,
-                    contrasena,
-                    st.session_state.editar
+                    contrasena if not st.session_state.editar else "123456"
                 ):
                     return
 
@@ -62,7 +74,7 @@ class PPersona:
                     "correo": correo.strip(),
                 }
 
-                # Solo actualizar contraseña si el usuario escribe una nueva
+                # Solo cifrar contraseña si se escribe una nueva
                 if contrasena:
                     usuario["contrasena"] = self.cifrar(contrasena)
 
@@ -71,11 +83,11 @@ class PPersona:
                         usuario,
                         st.session_state.correo_original
                     )
-                    st.success("✅ Usuario actualizado correctamente")
+                    st.success("✅ Usuario actualizado")
                 else:
                     usuario["contrasena"] = self.cifrar(contrasena)
                     self.negocio.nuevaPersona(usuario)
-                    st.success("✅ Usuario registrado correctamente")
+                    st.success("✅ Usuario registrado")
 
                 self.resetear()
                 st.rerun()
@@ -89,7 +101,10 @@ class PPersona:
             return
 
         st.subheader("📋 Lista de clientes")
-        st.dataframe(personas, use_container_width=True)
+        st.dataframe(
+            personas,
+            use_container_width=True
+        )
 
         correos = [p["correo"] for p in personas]
         seleccionado = st.selectbox("Selecciona un usuario", correos)
@@ -118,7 +133,8 @@ class PPersona:
                 st.rerun()
 
     # ================= VALIDACIONES =================
-    def validar_datos(self, nombre, apellido, telefono, correo, contrasena, editar):
+    # la validacion recorre el campo que estas ingresando
+    def validar_datos(self, nombre, apellido, telefono, correo, contrasena):
         if not re.fullmatch(r"[A-Za-zÁÉÍÓÚáéíóúÑñ ]+", nombre):
             st.error("❌ El nombre solo debe contener letras")
             return False
@@ -135,13 +151,10 @@ class PPersona:
             r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
             correo
         ):
-            st.error("❌ Correo inválido")
+            st.error("❌ Correo inválido (ejemplo: usuario@dominio.com)")
             return False
 
-        # Solo validar contraseña si:
-        # - se está registrando
-        # - o se está editando Y el usuario escribió una nueva
-        if (not editar or contrasena) and len(contrasena) < 6:
+        if len(contrasena) < 6:
             st.error("❌ La contraseña debe tener al menos 6 caracteres")
             return False
 
